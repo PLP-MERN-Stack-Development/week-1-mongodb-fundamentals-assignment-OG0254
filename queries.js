@@ -82,3 +82,63 @@ db.books
 // .limit(n) → how many results per page.
 
 // .skip(n) → how many to jump over.
+
+// Task 5 Aggregation pipeline
+
+// 1. Create an aggregation pipeline to calculate the average price of books by genre
+
+db.books.aggregate([
+  {
+    $group: {
+      _id: '$genre',
+      avgPrice: { $avg: '$price' },
+    },
+  },
+]);
+
+// 2. Create an aggregation pipeline to find the author with the most books in the collection
+
+db.books.aggregate([
+  { $group: { _id: '$author', totalBooks: { $sum: 1 } } },
+  { $sort: { totalBooks: -1 } },
+  { $limit: 1 },
+]);
+
+// 3. Implement a pipeline that groups books by publication decade and counts them
+
+db.books.aggregate([
+  {
+    $project: {
+      decade: { $multiply: [{ $floor: { $divide: ['$published_year', 10] } }, 10] },
+    },
+  },
+  { $group: { _id: '$decade', totalBooks: { $sum: 1 } } },
+  { $sort: { _id: 1 } },
+]);
+
+// Task 5: Indexing
+
+// 1. Create an index on the title field for faster searches
+
+db.books.createIndex({ title: 1 });
+
+// 2. Create a compound index on author and published_year
+
+db.books.createIndex({ author: 1, published_year: -1 });
+
+// 3. Use the explain() method to demonstrate the performance improvement with your indexes
+
+// --- BEFORE creating index ---
+// (Run this first, or drop the index with db.books.dropIndexes())
+db.books.find({ title: 'Database System Concepts' }).explain('executionStats');
+
+// --- AFTER creating index ---
+// (Run this after db.books.createIndex({ title: 1 }))
+db.books.find({ title: 'Database System Concepts' }).explain('executionStats');
+
+// ✅ Expected Outcome:
+// - Before index → execution plan shows "COLLSCAN" (collection scan), scanning all documents.
+// - After index  → execution plan shows "IXSCAN" (index scan), scanning only matching entries.
+// This proves how indexing improves query performance.
+
+//  point 3 in dependant on creation of index in point 1
